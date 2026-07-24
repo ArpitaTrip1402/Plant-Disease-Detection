@@ -1,31 +1,37 @@
-print(">>> main.py loaded")
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+
 from app.utils import preprocess_image
 from app.predict import predict_image
-import traceback
+
 
 app = FastAPI()
 
-@app.get("/")
-def home():
-    return {"message": "Plant Disease Prediction API"}
+# Templates
+templates = Jinja2Templates(directory="app/templates")
 
+# Static folder
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+# Home Page
+@app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={}
+    )
+
+# Prediction API
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    try:
-        print("Request received")
+    image = preprocess_image(file.file)
 
-        image = preprocess_image(file.file)
-        print("Image preprocessed")
+    disease, confidence = predict_image(image)
 
-        disease, confidence = predict_image(image)
-        print("Prediction completed")
-
-        return {
-            "disease": disease,
-            "confidence": round(confidence, 2)
-        }
-
-    except Exception as e:
-        traceback.print_exc()   # This prints the FULL error in the terminal
-        return {"error": str(e)}
+    return {
+        "disease": disease,
+        "confidence": round(confidence, 2)
+    }

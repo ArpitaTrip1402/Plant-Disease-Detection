@@ -1,10 +1,20 @@
 import streamlit as st
 import requests
+from PIL import Image
 
-st.set_page_config(page_title="Plant Disease Detection", page_icon="🌿")
+# -------------------------
+# CONFIG
+# -------------------------
+API_URL = "https://plant-disease-detection-y1cg.onrender.com/predict"
+
+st.set_page_config(
+    page_title="Plant Disease Detection",
+    page_icon="🌿",
+    layout="centered"
+)
 
 st.title("🌿 Plant Disease Detection")
-st.write("Upload a leaf image to predict the disease.")
+st.write("Upload a leaf image and detect its disease using AI.")
 
 uploaded_file = st.file_uploader(
     "Choose a leaf image",
@@ -13,25 +23,44 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
 
-    st.image(uploaded_file, caption="Uploaded Image", use_container_width=True)
+    image = Image.open(uploaded_file)
 
-    if st.button("Predict"):
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
-        files = {"file": uploaded_file.getvalue()}
+    if st.button("Predict Disease"):
 
-        response = requests.post(
-            "http://127.0.0.1:8000/predict",
-            files=files
-        )
+        with st.spinner("Predicting..."):
 
-        if response.status_code == 200:
+            files = {
+                "file": (
+                    uploaded_file.name,
+                    uploaded_file.getvalue(),
+                    uploaded_file.type,
+                )
+            }
 
-            result = response.json()
+            try:
 
-            st.success("Prediction Completed!")
+                response = requests.post(API_URL, files=files)
 
-            st.write(f"### Disease: {result['disease']}")
-            st.write(f"### Confidence: {result['confidence']} %")
+                if response.status_code == 200:
 
-        else:
-            st.error("Prediction Failed!")
+                    result = response.json()
+
+                    st.success("Prediction Completed!")
+
+                    st.subheader("Disease")
+
+                    st.write(result["disease"])
+
+                    st.subheader("Confidence")
+
+                    st.write(f"{result['confidence']:.2f}%")
+
+                else:
+
+                    st.error(f"API Error: {response.text}")
+
+            except Exception as e:
+
+                st.error(str(e))

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detection</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>🌿 Plant Disease Detection</h1>
+
+    <p class="subtitle">
+        Upload a plant leaf image and let AI identify the disease.
+    </p>
+
+    <form id="predictForm">
+
+        
+        <input 
+            type="file"
+            id="imageInput"
+            name="file"
+            accept="image/*"
+            required
+        >
+
+        <br><br>
+
+        <img id="preview">
+
+        <br><br>
+
+        <button type="submit">
+            Predict Disease
+        </button>
+
+    </form>
+
+    <div id="loading">
+        Predicting...
+    </div>
+
+    <div id="result">
+
+        <h2>Prediction</h2>
+
+        <h3 id="disease"></h3>
+
+        <h4 id="confidence"></h4>
+
+    </div>
+
+</div>
+
+<script>
+
+const imageInput = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+
+imageInput.onchange = function () {
+
+    preview.src = URL.createObjectURL(this.files[0]);
+    preview.style.display = "block";
+
+};
+
+document.getElementById("predictForm").addEventListener("submit", async function (e) {
+
+    e.preventDefault();
+
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("result").style.display = "none";
+
+    let formData = new FormData();
+    formData.append("file", imageInput.files[0]);
+
+    try {
+
+        const response = await fetch("/predict", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error("Prediction failed");
+        }
+
+        const data = await response.json();
+
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("result").style.display = "block";
+
+        document.getElementById("disease").innerHTML =
+            "🌱 " + data.disease;
+
+        document.getElementById("confidence").innerHTML =
+            "Confidence : " + data.confidence + "%";
+
+    }
+
+    catch (error) {
+
+        document.getElementById("loading").style.display = "none";
+        alert(error.message);
+
+    }
+
+});
+</script>
+
+</body>
+</html>
